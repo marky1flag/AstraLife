@@ -119,11 +119,19 @@ AstraLife/
 
 ## 🗺️ Roadmap
 
+### 🎨 UI / Visual (coming soon)
+- [ ] Isometric village map with animated sprites
+- [ ] Agent portrait illustrations
+- [ ] Day/night cycle visual
+- [ ] Animated event notifications
+- [ ] Mobile-friendly layout
+
+### 🧠 AI & Gameplay
 - [ ] More agent roles (Priest, Thief, Doctor)
+- [ ] Agent-to-agent visible dialogue bubbles
 - [ ] Persistent world (save/load village state)
-- [ ] Agent-to-agent dialogue (visible conversations)
-- [ ] Mobile-friendly UI
 - [ ] Multi-village support
+- [ ] Player can talk directly to an agent
 
 ---
 
