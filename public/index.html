@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AstraLife — AI village simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --bg:#0a0a12;
+    --panel:#11111c;
+    --panel-2:#161624;
+    --border:#262638;
+    --purple:#a78bfa;
+    --purple-dim:#7c5fd6;
+    --green:#4ade80;
+    --amber:#fbbf24;
+    --red:#f87171;
+    --blue:#60a5fa;
+    --text:#e8e8f0;
+    --text-dim:#8b8ba3;
+    --text-faint:#5c5c74;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    padding:20px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:280px 1fr 340px;
+    gap:16px;
+    max-width:1600px;
+    margin:0 auto;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+  }
+  .label{
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--purple);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+
+  /* hero */
+  .hero h1{
+    font-size:30px;
+    margin:0;
+    background:linear-gradient(135deg,#fff,#c4b5fd);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .hero .sub{color:var(--purple);font-size:13px;font-weight:600;margin:2px 0 14px;}
+  .hero p{font-size:13px;color:var(--text-dim);line-height:1.6;margin:0 0 20px;}
+  .feature{display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;}
+  .feature .icon{
+    width:32px;height:32px;border-radius:9px;flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+  }
+  .feature .icon.purple{background:rgba(167,139,250,0.15);}
+  .feature .icon.green{background:rgba(74,222,128,0.15);}
+  .feature .icon.pink{background:rgba(248,113,182,0.15);}
+  .feature .ftitle{font-size:14px;font-weight:600;margin:0 0 2px;}
+  .feature .fdesc{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.5;}
+
+  /* center */
+  .topbar{
+    display:flex;align-items:center;gap:18px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 16px;
+    margin-bottom:12px;
+    font-size:13px;
+    flex-wrap:wrap;
+  }
+  .topbar .world{font-weight:600;}
+  .topbar .stat{display:flex;align-items:center;gap:5px;color:var(--text-dim);}
+  .topbar .stat b{color:var(--text);font-weight:600;}
+  .topbar .spacer{flex:1;}
+
+  .mapwrap{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--border);}
+  svg#mapSvg{display:block;width:100%;background:linear-gradient(180deg,#16241a,#0e1812);}
+  .tag{
+    position:absolute;
+    background:rgba(10,10,18,0.85);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:3px 8px;
+    font-size:11px;
+    color:var(--text-dim);
+    pointer-events:none;
+    transform:translate(-50%,-130%);
+  }
+  .controls{
+    position:absolute;bottom:10px;left:10px;
+    display:flex;align-items:center;gap:6px;
+    background:rgba(10,10,18,0.85);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:6px 8px;
+  }
+  .ctrlbtn{
+    width:30px;height:30px;border-radius:7px;border:none;
+    background:var(--panel-2);color:var(--text);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+  }
+  .ctrlbtn:hover{background:var(--purple-dim);}
+  .ctrlbtn:disabled{opacity:0.4;cursor:default;}
+  .speedtag{font-size:11px;color:var(--text-dim);padding:0 6px;}
+  .eventsbtn{
+    position:absolute;bottom:10px;right:10px;
+    background:rgba(10,10,18,0.85);border:1px solid var(--border);
+    border-radius:9px;padding:7px 12px;font-size:12px;color:var(--text-dim);
+    display:flex;align-items:center;gap:6px;
+  }
+  .dot-live{width:6px;height:6px;border-radius:50%;background:var(--red);}
+
+  .eventrow{display:flex;gap:10px;margin-top:12px;}
+  .inputbox{
+    flex:1;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;
+  }
+  .inputbox::placeholder{color:var(--text-faint);}
+  .pillbtn{
+    background:var(--purple-dim);border:none;border-radius:8px;
+    padding:9px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+    white-space:nowrap;
+  }
+  .pillbtn:hover{background:var(--purple);}
+  .pillbtn:disabled{opacity:0.5;cursor:default;}
+  .pillbtn.outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+
+  /* agent cards (right) */
+  .agentcard{
+    display:flex;gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:11px;
+    padding:11px;
+    margin-bottom:10px;
+  }
+  .avatar{
+    width:46px;height:46px;border-radius:10px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;color:#0a0a12;
+  }
+  .acard-body{flex:1;min-width:0;}
+  .acard-top{display:flex;justify-content:space-between;align-items:baseline;}
+  .acard-name{font-size:13.5px;font-weight:600;}
+  .acard-role{font-size:11px;color:var(--text-faint);}
+  .acard-goal{font-size:11.5px;color:var(--text-dim);margin:3px 0 5px;}
+  .acard-mem{font-size:11px;color:var(--text-faint);line-height:1.5;}
+  .acard-mem div::before{content:"– ";}
+  .moodbar{height:4px;border-radius:3px;background:var(--border);margin-top:6px;overflow:hidden;}
+  .moodbar i{display:block;height:100%;background:var(--green);}
+
+  /* world overview row */
+  .row3{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:16px;margin-top:16px;}
+  .statline{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-dim);padding:5px 0;border-bottom:1px solid var(--border);}
+  .statline b{color:var(--text);font-weight:600;}
+  .lifecards{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .lifecard{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px;}
+  .lifecard .ltitle{font-size:12.5px;font-weight:600;margin:0 0 2px;}
+  .lifecard .ldesc{font-size:11px;color:var(--text-faint);margin:0;}
+
+  /* event log */
+  .logline{font-size:12px;color:var(--text-dim);padding:4px 0;display:flex;gap:8px;}
+  .logtime{color:var(--text-faint);flex:none;width:42px;}
+  #logbox{max-height:160px;overflow-y:auto;display:flex;flex-direction:column-reverse;}
+
+  /* relationship svg text */
+  .rtext{font-size:10px;fill:var(--text-dim);}
+  .rname{font-size:11px;fill:var(--text);font-weight:600;}
+
+  /* AI life loop */
+  .loop{display:flex;align-items:center;gap:6px;margin-top:16px;overflow-x:auto;padding-bottom:4px;}
+  .loopstep{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px;min-width:120px;flex:none;
+  }
+  .loopstep .lstitle{font-size:12.5px;font-weight:600;margin:0 0 2px;}
+  .loopstep .lsdesc{font-size:10.5px;color:var(--text-faint);margin:0;line-height:1.4;}
+  .arrow{color:var(--text-faint);flex:none;font-size:16px;}
+
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<div class="grid">
+
+  <div class="panel hero">
+    <h1>AstraLife</h1>
+    <div class="sub">AI life simulator</div>
+    <p>A world of AI agents living, working, and interacting in a persistent civilization. This runs on a rule-based engine so it works offline — see the note at the bottom to wire it up to real Claude reasoning.</p>
+    <div class="feature">
+      <div class="icon purple">🧠</div>
+      <div><p class="ftitle">Memory</p><p class="fdesc">They remember the past.</p></div>
+    </div>
+    <div class="feature">
+      <div class="icon green">🎯</div>
+      <div><p class="ftitle">Goals</p><p class="fdesc">They have needs and ambitions.</p></div>
+    </div>
+    <div class="feature">
+      <div class="icon pink">🤝</div>
+      <div><p class="ftitle">Relationships</p><p class="fdesc">They build bonds, trust, and rivalries.</p></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="topbar">
+      <div class="world">AstraLife World</div>
+      <div class="stat">Day <b id="dayOut">1</b></div>
+      <div class="stat" id="timeOut">08:00</div>
+      <div class="stat">😊 <b id="happyOut">90%</b></div>
+      <div class="stat">👤 <b id="popOut">5</b></div>
+      <div class="spacer"></div>
+      <div class="stat">🪙 <b id="goldOut">300</b></div>
+      <div class="stat">🪵 <b id="woodOut">150</b></div>
+      <div class="stat">🪨 <b id="stoneOut">90</b></div>
+      <div class="stat">🍎 <b id="foodOut">80</b></div>
+    </div>
+
+    <div class="mapwrap">
+      <svg id="mapSvg" viewBox="0 0 760 480"></svg>
+      <div class="controls">
+        <button class="ctrlbtn" id="pauseBtn" title="Pause">⏸</button>
+        <button class="ctrlbtn" id="playBtn" title="Play">▶</button>
+        <button class="ctrlbtn" id="speedBtn" title="Speed">⏭</button>
+        <span class="speedtag" id="speedTag">1x</span>
+      </div>
+      <div class="eventsbtn"><span class="dot-live"></span>World events</div>
+    </div>
+
+    <div class="eventrow">
+      <input class="inputbox" id="eventInput" type="text" placeholder="Throw an event at the village, e.g. a flood hits the farm">
+      <button class="pillbtn" id="eventBtn">Inject event</button>
+      <button class="pillbtn outline" id="aiModeBtn">Use real AI</button>
+      <button class="pillbtn outline" id="resetBtn">Reset</button>
+    </div>
+    <div id="aiStatus" style="display:none;font-size:12px;color:var(--text-dim);background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;margin-top:10px;"></div>
+
+    <div class="row3">
+      <div class="panel">
+        <div class="label">World overview</div>
+        <div class="statline"><span>Population</span><b id="ov-pop">5 / 12</b></div>
+        <div class="statline"><span>Happiness</span><b id="ov-happy">90%</b></div>
+        <div class="statline"><span>Gold</span><b id="ov-gold">300</b></div>
+        <div class="statline"><span>Wood</span><b id="ov-wood">150</b></div>
+        <div class="statline" style="border-bottom:none;"><span>Food</span><b id="ov-food">80</b></div>
+      </div>
+      <div class="panel">
+        <div class="label">How they live</div>
+        <div class="lifecards">
+          <div class="lifecard"><p class="ltitle">Work</p><p class="ldesc">They work toward their goals.</p></div>
+          <div class="lifecard"><p class="ltitle">Socialize</p><p class="ldesc">They talk and build friendships.</p></div>
+          <div class="lifecard"><p class="ltitle">Trade</p><p class="ldesc">They trade resources and items.</p></div>
+          <div class="lifecard"><p class="ltitle">Decide</p><p class="ldesc">They discuss and make village choices.</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Relationship network</div>
+        <svg id="relSvg" viewBox="0 0 280 220" style="width:100%;"></svg>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <div class="label">AI life loop</div>
+      <div class="loop">
+        <div class="loopstep"><p class="lstitle">Perceive world</p><p class="lsdesc">Observe surroundings, people, and events.</p></div>
+        <div class="arrow">→</div>
+        <div class="loopstep"><p class="lstitle">Think</p><p class="lsdesc">Process information, recall memories.</p></div>
+        <div class="arrow">→</div>
+        <div class="loopstep"><p class="lstitle">Decide</p><p class="lsdesc">Choose actions based on goals and values.</p></div>
+        <div class="arrow">→</div>
+        <div class="loopstep"><p class="lstitle">Act</p><p class="lsdesc">Perform actions in the world.</p></div>
+        <div class="arrow">→</div>
+        <div class="loopstep"><p class="lstitle">Remember</p><p class="lsdesc">Store experiences in memory.</p></div>
+        <div class="arrow">→</div>
+        <div class="loopstep"><p class="lstitle">Repeat</p><p class="lsdesc">Life goes on.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="label">AI agents</div>
+      <div id="agentList"></div>
+    </div>
+    <div class="panel">
+      <div class="label">Event log (live)</div>
+      <div id="logbox"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var palette = ['#a78bfa','#4ade80','#fbbf24','#f472b6','#60a5fa'];
+
+var buildings = [
+  {name:'Farm', x:90, y:150, w:90, h:50, color:'#3a5a2a'},
+  {name:'Windmill', x:60, y:60, w:50, h:60, color:'#5a4a3a'},
+  {name:'Market', x:330, y:150, w:80, h:46, color:'#5a4a2a'},
+  {name:'Town hall', x:430, y:70, w:90, h:60, color:'#4a3a5a'},
+  {name:'Blacksmith', x:240, y:60, w:70, h:44, color:'#5a3a3a'},
+  {name:'Lumber mill', x:560, y:170, w:90, h:50, color:'#3a4a3a'},
+  {name:'House', x:240, y:230, w:70, h:46, color:'#4a4a3a'}
+];
+
+var spots = {
+  Farm:{x:135,y:200}, Windmill:{x:85,y:140}, Market:{x:370,y:210},
+  'Town hall':{x:475,y:150}, Blacksmith:{x:275,y:120}, 'Lumber mill':{x:605,y:235}, House:{x:275,y:290},
+  Square:{x:380,y:340}
+};
+var locKeys = Object.keys(spots);
+
+function makeAgent(name, role, color, home, goal){
+  return {
+    name:name, role:role, color:color, loc:home,
+    x:spots[home].x, y:spots[home].y,
+    goal:goal, mood: 80 + Math.floor(Math.random()*15),
+    memory:[name + ' arrived in the village.'],
+    relationships:{}, resources:{gold:20,wood:10,stone:5,food:10}
+  };
+}
+
+var agentDefs = [
+  ['Lina','Farmer','#a78bfa','Farm','Grow crops and feed the village'],
+  ['Borin','Blacksmith','#4ade80','Blacksmith','Forge tools for the village'],
+  ['Milo','Merchant','#fbbf24','Market','Maximize profit and expand trade'],
+  ['Tara','Builder','#f472b6','House','Build and upgrade structures'],
+  ['Eldric','Mayor','#60a5fa','Town hall','Grow the village and keep citizens happy']
+];
+
+var actionVerbs = {
+  Farmer:['waters the wheat field','harvests crops','plants new seeds','feeds the livestock'],
+  Blacksmith:['forges an iron tool','repairs a broken cart wheel','sharpens tools for sale','smelts ore into ingots'],
+  Merchant:['negotiates a trade deal','restocks the market stall','adjusts prices for the season','sells goods to a traveler'],
+  Builder:['reinforces a house wall','plans a new bridge','gathers stone for construction','repairs the town well'],
+  Mayor:['reviews village finances','greets new citizens','drafts a new policy','settles a dispute']
+};
+
+var social = [
+  {verb:'shares a meal with', delta:2},
+  {verb:'trades goods with', delta:1},
+  {verb:'has a disagreement with', delta:-2},
+  {verb:'helps', delta:2},
+  {verb:'gossips with', delta:1},
+  {verb:'argues over prices with', delta:-3},
+  {verb:'thanks', delta:2}
+];
+
+var state = {};
+
+function relWord(v){
+  if(v>=6) return 'Ally';
+  if(v>=2) return 'Friend';
+  if(v<=-4) return 'Rival';
+  if(v<=-1) return 'Tense';
+  return 'Neutral';
+}
+function relColor(v){
+  if(v>=2) return '#4ade80';
+  if(v<=-1) return '#f87171';
+  return '#5c5c74';
+}
+
+function reset(){
+  state.agents = agentDefs.map(function(d){ return makeAgent(d[0],d[1],d[2],d[3],d[4]); });
+  state.agents.forEach(function(a){ state.agents.forEach(function(b){ if(a!==b) a.relationships[b.name]=0; }); });
+  state.day = 1;
+  state.hour = 8;
+  state.gold = 300; state.wood = 150; state.stone = 90; state.food = 80;
+  state.happiness = 90;
+  state.log = [];
+  state.playing = true;
+  state.speed = 1;
+  state.pendingEvent = null;
+  pushLog('World begins. Day 1.');
+  renderAll();
+}
+
+function pushLog(text){
+  var h = String(state.hour).padStart(2,'0');
+  state.log.push({time: h + ':00', text: text});
+  if(state.log.length > 30) state.log = state.log.slice(state.log.length-30);
+}
+
+function pickOther(a){
+  var others = state.agents.filter(function(b){ return b!==a; });
+  return others[Math.floor(Math.random()*others.length)];
+}
+
+function tick(){
+  state.hour += 1 + Math.floor(Math.random()*2);
+  if(state.hour >= 24){ state.hour -= 24; state.day += 1; pushLog('Day ' + state.day + ' begins.'); }
+
+  var numEvents = 1 + Math.floor(Math.random()*2);
+  for(var i=0;i<numEvents;i++){
+    var a = state.agents[Math.floor(Math.random()*state.agents.length)];
+    var roll = Math.random();
+
+    if(roll < 0.45){
+      var verbs = actionVerbs[a.role];
+      var v = verbs[Math.floor(Math.random()*verbs.length)];
+      pushLog(a.name + ' ' + v + '.');
+      a.memory.push(v);
+      if(a.memory.length>4) a.memory.shift();
+      var rg = Math.floor(Math.random()*4)-1;
+      if(rg!==0){
+        var keys=['gold','wood','stone','food'];
+        var k = keys[Math.floor(Math.random()*keys.length)];
+        state[k] = Math.max(0, state[k] + rg*3);
+      }
+    } else if(roll < 0.8){
+      var b = pickOther(a);
+      var s = social[Math.floor(Math.random()*social.length)];
+      pushLog(a.name + ' ' + s.verb + ' ' + b.name + '.');
+      a.relationships[b.name] = (a.relationships[b.name]||0) + s.delta;
+      b.relationships[a.name] = (b.relationships[a.name]||0) + Math.round(s.delta*0.7);
+      var memtxt = s.verb + ' ' + b.name;
+      a.memory.push(memtxt); if(a.memory.length>4) a.memory.shift();
+      b.memory.push(s.verb + ' ' + a.name); if(b.memory.length>4) b.memory.shift();
+      state.happiness = Math.max(0, Math.min(100, state.happiness + (s.delta>0?1:-1)));
+    } else {
+      var dest = locKeys[Math.floor(Math.random()*locKeys.length)];
+      a.loc = dest;
+      pushLog(a.name + ' walks to ' + dest + '.');
+    }
+    a.mood = Math.max(20, Math.min(100, a.mood + (Math.random()<0.5?-2:3)));
+  }
+
+  if(state.pendingEvent){
+    var ev = state.pendingEvent;
+    pushLog('World event: ' + ev);
+    state.agents.forEach(function(a){
+      a.memory.push('Heard about: ' + ev);
+      if(a.memory.length>4) a.memory.shift();
+      a.mood = Math.max(10, a.mood - 5);
+    });
+    state.happiness = Math.max(0, state.happiness - 4);
+    state.pendingEvent = null;
+  }
+
+  positionAgents();
+  renderAll();
+}
+
+function positionAgents(){
+  state.agents.forEach(function(a,i){
+    var p = spots[a.loc] || spots.Square;
+    var angle = (i/state.agents.length)*2*Math.PI;
+    a.x = p.x + Math.cos(angle)*16;
+    a.y = p.y + Math.sin(angle)*16;
+  });
+}
+
+function renderMap(){
+  var svg = document.getElementById('mapSvg');
+  var s = '';
+  buildings.forEach(function(b){
+    s += '<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" rx="6" fill="'+b.color+'" stroke="#0a0a12" stroke-width="2"/>';
+    s += '<text x="'+(b.x+b.w/2)+'" y="'+(b.y-8)+'" text-anchor="middle" font-size="11" fill="#e8e8f0">'+b.name+'</text>';
+  });
+  state.agents.forEach(function(a){
+    s += '<circle cx="'+a.x+'" cy="'+a.y+'" r="10" fill="'+a.color+'" stroke="#0a0a12" stroke-width="2"/>';
+    s += '<text x="'+a.x+'" y="'+(a.y+3)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#0a0a12">'+a.name[0]+'</text>';
+    s += '<text x="'+a.x+'" y="'+(a.y+24)+'" text-anchor="middle" font-size="9" fill="#c8c8da">'+a.name+'</text>';
+  });
+  svg.innerHTML = s;
+}
+
+function renderAgents(){
+  var list = document.getElementById('agentList');
+  list.innerHTML = state.agents.map(function(a){
+    var mem = a.memory.slice(-3).map(function(m){ return '<div>'+m+'</div>'; }).join('');
+    return '<div class="agentcard">' +
+      '<div class="avatar" style="background:'+a.color+';">'+a.name[0]+'</div>' +
+      '<div class="acard-body">' +
+        '<div class="acard-top"><span class="acard-name">'+a.name+'</span><span class="acard-role">'+a.role+'</span></div>' +
+        '<div class="acard-goal">Goal: '+a.goal+'</div>' +
+        '<div class="moodbar"><i style="width:'+a.mood+'%"></i></div>' +
+        '<div class="acard-mem" style="margin-top:6px;">'+mem+'</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderRel(){
+  var svg = document.getElementById('relSvg');
+  var positions = {};
+  var n = state.agents.length;
+  state.agents.forEach(function(a,i){
+    var angle = (i/n)*2*Math.PI - Math.PI/2;
+    positions[a.name] = {x:140+Math.cos(angle)*85, y:110+Math.sin(angle)*78};
+  });
+  var s = '';
+  var drawn = {};
+  state.agents.forEach(function(a){
+    state.agents.forEach(function(b){
+      if(a===b) return;
+      var key = [a.name,b.name].sort().join('-');
+      if(drawn[key]) return;
+      drawn[key]=true;
+      var v = (a.relationships[b.name]||0) + (b.relationships[a.name]||0);
+      if(Math.abs(v) < 2) return;
+      var p1=positions[a.name], p2=positions[b.name];
+      s += '<line x1="'+p1.x+'" y1="'+p1.y+'" x2="'+p2.x+'" y2="'+p2.y+'" stroke="'+relColor(v)+'" stroke-width="1.5" opacity="0.8"/>';
+    });
+  });
+  state.agents.forEach(function(a){
+    var p = positions[a.name];
+    s += '<circle cx="'+p.x+'" cy="'+p.y+'" r="16" fill="'+a.color+'" stroke="#0a0a12" stroke-width="2"/>';
+    s += '<text x="'+p.x+'" y="'+(p.y+4)+'" text-anchor="middle" class="rtext" font-weight="700" fill="#0a0a12">'+a.name[0]+'</text>';
+    s += '<text x="'+p.x+'" y="'+(p.y+28)+'" text-anchor="middle" class="rname">'+a.name+'</text>';
+  });
+  svg.innerHTML = s;
+}
+
+function renderTop(){
+  document.getElementById('dayOut').textContent = state.day;
+  document.getElementById('timeOut').textContent = String(state.hour).padStart(2,'0')+':00';
+  document.getElementById('happyOut').textContent = state.happiness+'%';
+  document.getElementById('popOut').textContent = state.agents.length;
+  document.getElementById('goldOut').textContent = state.gold;
+  document.getElementById('woodOut').textContent = state.wood;
+  document.getElementById('stoneOut').textContent = state.stone;
+  document.getElementById('foodOut').textContent = state.food;
+
+  document.getElementById('ov-pop').textContent = state.agents.length + ' / 12';
+  document.getElementById('ov-happy').textContent = state.happiness+'%';
+  document.getElementById('ov-gold').textContent = state.gold;
+  document.getElementById('ov-wood').textContent = state.wood;
+  document.getElementById('ov-food').textContent = state.food;
+}
+
+function renderLog(){
+  var box = document.getElementById('logbox');
+  box.innerHTML = state.log.slice().reverse().map(function(e){
+    return '<div class="logline"><span class="logtime">'+e.time+'</span><span>'+e.text+'</span></div>';
+  }).join('');
+}
+
+function renderAll(){
+  renderTop();
+  renderMap();
+  renderAgents();
+  renderRel();
+  renderLog();
+}
+
+var timer = null;
+var aiMode = false;
+var aiBusy = false;
+var SERVER_URL = '/api/tick';
+
+function setAiStatus(text, show){
+  var el = document.getElementById('aiStatus');
+  el.style.display = show === false ? 'none' : 'block';
+  el.textContent = text;
+}
+
+function callServerTick(){
+  if(aiBusy) return Promise.resolve();
+  aiBusy = true;
+  setAiStatus('Villagers are thinking (real Claude)...');
+  var payload = {
+    agents: state.agents.map(function(a){
+      return { name:a.name, role:a.role, loc:a.loc, goal:a.goal, mood:a.mood, resources:a.resources, relationships:a.relationships, memory:a.memory };
+    }),
+    locations: locKeys,
+    day: state.day,
+    worldEvent: state.pendingEvent
+  };
+  return fetch(SERVER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(result){
+    if(result.error){
+      pushLog('AI error: ' + result.error);
+      setAiStatus('AI error: ' + result.error);
+      return;
+    }
+    state.hour += 1 + Math.floor(Math.random()*2);
+    if(state.hour >= 24){ state.hour -= 24; state.day += 1; }
+    if(state.pendingEvent){
+      pushLog('World event: ' + state.pendingEvent);
+    }
+    (result.events || []).forEach(function(ev){
+      var a = state.agents.find(function(x){ return x.name === ev.actor; });
+      if(!a) return;
+      if(ev.location && locKeys.indexOf(ev.location) !== -1) a.loc = ev.location;
+      pushLog(a.name + ' ' + ev.action);
+      a.memory.push(ev.action);
+      if(a.memory.length>4) a.memory.shift();
+      if(ev.target){
+        var b = state.agents.find(function(x){ return x.name === ev.target; });
+        if(b){
+          var d = ev.relationship_delta || 0;
+          a.relationships[b.name] = (a.relationships[b.name]||0) + d;
+          b.relationships[a.name] = (b.relationships[a.name]||0) + Math.round(d*0.7);
+          b.memory.push(ev.action);
+          if(b.memory.length>4) b.memory.shift();
+        }
+      }
+      a.mood = Math.max(10, Math.min(100, a.mood + (ev.mood_delta_actor || 0)));
+      if(ev.resource_changes){
+        Object.keys(ev.resource_changes).forEach(function(k){
+          if(state.hasOwnProperty(k)) state[k] = Math.max(0, state[k] + ev.resource_changes[k]);
+        });
+      }
+      if(ev.new_goal){
+        a.goal = ev.new_goal;
+        pushLog(a.name + ' sets a new goal: ' + ev.new_goal);
+      }
+    });
+    state.pendingEvent = null;
+    positionAgents();
+    renderAll();
+    setAiStatus('Last update: real Claude, day ' + state.day);
+  }).catch(function(err){
+    pushLog('AI error: ' + String(err.message || err));
+    setAiStatus('AI error: ' + String(err.message || err));
+  }).finally(function(){
+    aiBusy = false;
+  });
+}
+
+function setPlaying(p){
+  state.playing = p;
+  if(timer) clearInterval(timer);
+  if(p){
+    timer = setInterval(function(){
+      if(aiMode) callServerTick(); else tick();
+    }, aiMode ? Math.max(4000, 1800/state.speed) : 1800/state.speed);
+  }
+}
+
+document.getElementById('aiModeBtn').addEventListener('click', function(){
+  aiMode = !aiMode;
+  this.textContent = aiMode ? 'Using real AI' : 'Use real AI';
+  this.style.background = aiMode ? 'var(--purple-dim)' : 'transparent';
+  this.style.color = aiMode ? '#fff' : 'var(--text-dim)';
+  setAiStatus(aiMode ? 'Real AI mode on. Each tick now calls your local server at /api/tick.' : '', aiMode);
+  if(state.playing) setPlaying(true);
+});
+document.getElementById('pauseBtn').addEventListener('click', function(){ setPlaying(false); });
+document.getElementById('playBtn').addEventListener('click', function(){ setPlaying(true); });
+document.getElementById('speedBtn').addEventListener('click', function(){
+  state.speed = state.speed >= 4 ? 1 : state.speed*2;
+  document.getElementById('speedTag').textContent = state.speed+'x';
+  if(state.playing) setPlaying(true);
+});
+document.getElementById('resetBtn').addEventListener('click', function(){ setPlaying(false); reset(); setPlaying(true); });
+document.getElementById('eventBtn').addEventListener('click', function(){
+  var v = document.getElementById('eventInput').value.trim();
+  if(!v) return;
+  state.pendingEvent = v;
+  document.getElementById('eventInput').value = '';
+  if(aiMode) setAiStatus('Event queued for next AI tick: ' + v);
+});
+document.getElementById('eventInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter') document.getElementById('eventBtn').click();
+});
+
+reset();
+positionAgents();
+renderAll();
+setPlaying(true);
+
+</script>
+</body>
+</html>
