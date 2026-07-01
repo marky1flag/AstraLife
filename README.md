@@ -10,7 +10,7 @@
 
 **AstraLife** is an open-source AI civilization simulator where autonomous agents live, work, and interact in a persistent village. Each AI villager has their own memory, goals, personality, and relationships — creating a dynamic mini-world that evolves over time.
 
-[🚀 Live Demo](#) · [📖 Docs](#how-it-works) · [🐛 Report Bug](https://github.com/marky1flag/AstraLife/issues)
+[🚀 Live Demo](https://astralife-production.up.railway.app/) · [📖 Docs](#how-it-works) · [🐛 Report Bug](https://github.com/marky1flag/AstraLife/issues)
 
 </div>
 
