@@ -1,3 +1,4 @@
+<img width="1562" height="880" alt="image" src="https://github.com/user-attachments/assets/560d0d25-fa83-4cc6-b79b-da76bae0035a" />
 <div align="center">
 
 # 🌍 AstraLife
